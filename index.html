@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NYC Tourist Adventure</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/phaser/3.70.0/phaser.min.js"></script>
+<style>
+        body {
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background: #1a1a1a;
+            color: #fff;
+            font-family: 'Arial', sans-serif;
+        }
+        #game-container {
+            margin: 20px;
+            box-shadow: 0 0 20px rgba(255,255,255,0.2);
+        }
+        h1 {
+            color: #ffd700;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+<h1>NYC Tourist Adventure</h1>
+<div id="game-container"></div>
+<script>
+        const config = {
+            type: Phaser.AUTO,
+            width: 800,
+            height: 600,
+            backgroundColor: '#87CEEB',
+            physics: {
+                default: 'arcade',
+                arcade: {
+                    gravity: { y: 300 },
+                    debug: false
+                }
+            },
+            scene: {
+                preload: preload,
+                create: create,
+                update: update
+            },
+            parent: 'game-container'
+        };
+
+        const game = new Phaser.Game(config);
+        let player;
+        let landmarks;
+        let cursors;
+        let score = 0;
+        let scoreText;
+        let gameOver = false;
+
+        function preload() {
+            // Create pixel art graphics programmatically
+            const graphics = this.add.graphics();
+            
+            // Player texture (yellow taxi)
+            graphics.fillStyle(0xFFDB58);
+            graphics.fillRect(0, 0, 32, 16);
+            graphics.generateTexture('taxi', 32, 16);
+            graphics.clear();
+
+            // Landmark texture (building)
+            graphics.fillStyle(0x808080);
+            graphics.fillRect(0, 0, 64, 128);
+            graphics.generateTexture('landmark', 64, 128);
+            graphics.clear();
+        }
+
+        function create() {
+            // Create ground
+            const ground = this.add.rectangle(400, 568, 800, 64, 0x00FF00);
+            this.physics.add.existing(ground, true);
+
+            // Create player (taxi)
+            player = this.physics.add.sprite(100, 450, 'taxi');
+            player.setBounce(0.2);
+            player.setCollideWorldBounds(true);
+
+            // Create landmarks
+            landmarks = this.physics.add.staticGroup();
+            const landmarkPositions = [200, 400, 600];
+            landmarkPositions.forEach(x => {
+                landmarks.create(x, 400, 'landmark');
+            });
+
+            // Colliders
+            this.physics.add.collider(player, ground);
+            this.physics.add.collider(player, landmarks, visitLandmark, null, this);
+
+            // Controls
+            cursors = this.input.keyboard.createCursorKeys();
+
+            // Score
+            scoreText = this.add.text(16, 16, 'Landmarks visited: 0', { 
+                fontSize: '32px', 
+                fill: '#fff',
+                stroke: '#000',
+                strokeThickness: 4
+            });
+        }
+
+        function update() {
+            if (gameOver) return;
+
+            // Player movement
+            if (cursors.left.isDown) {
+                player.setVelocityX(-160);
+            } else if (cursors.right.isDown) {
+                player.setVelocityX(160);
+            } else {
+                player.setVelocityX(0);
+            }
+
+            if (cursors.up.isDown && player.body.touching.down) {
+                player.setVelocityY(-330);
+            }
+        }
+
+        function visitLandmark(player, landmark) {
+            if (!landmark.visited) {
+                landmark.visited = true;
+                landmark.setTint(0x00ff00);
+                score += 1;
+                scoreText.setText('Landmarks visited: ' + score);
+
+                if (score === 3) {
+                    this.add.text(400, 300, 'Tour Complete!\nYou visited all landmarks!', {
+                        fontSize: '48px',
+                        fill: '#fff',
+                        stroke: '#000',
+                        strokeThickness: 6,
+                        align: 'center'
+                    }).setOrigin(0.5);
+                    gameOver = true;
+                }
+            }
+        }
+    </script>
+</body>
+</html>
